@@ -1,0 +1,32 @@
+<!--
+  WAZUH RULE: proc_create_powershell_encoded_command
+  Sigma source: rules/execution/proc_create_powershell_encoded_command.yml
+  ATT&CK:       T1059.001 - Command and Scripting Interpreter: PowerShell
+  Sysmon event: Event ID 1 (Process Creation)
+  Wazuh group:  sysmon_event1
+
+  Deployment: place this file in /var/ossec/etc/rules/ on the Wazuh manager.
+  Reload with: systemctl restart wazuh-manager  OR  /var/ossec/bin/wazuh-control restart
+
+  Field mapping from Sigma:
+    Image       → win.eventdata.image
+    CommandLine → win.eventdata.commandLine
+
+  Wazuh rule ID: 100001
+  Next available: 100002 (update docs/coverage-matrix.md)
+-->
+
+<group name="sigma,windows,execution,t1059.001,">
+
+  <rule id="100001" level="10">
+    <if_group>sysmon_event1</if_group>
+    <field name="win.eventdata.image" type="pcre2">(?i)(powershell|pwsh)\.exe$</field>
+    <field name="win.eventdata.commandLine" type="pcre2">(?i)[\s/\-](EncodedCommand|EnC|EC)[\s]</field>
+    <description>SIGMA T1059.001: PowerShell Encoded Command Execution - $(win.eventdata.commandLine)</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <group>attack.execution,attack.t1059.001,sigma,</group>
+  </rule>
+
+</group>

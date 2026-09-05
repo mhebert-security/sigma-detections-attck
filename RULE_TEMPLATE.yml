@@ -1,0 +1,94 @@
+# SIGMA RULE TEMPLATE
+# Copy this file into rules/<tactic>/<descriptive_name>.yml
+# Remove all comments before committing.
+# Every field marked REQUIRED must be present for the rule to lint clean.
+
+title: <Short, human-readable description of what this rule detects>   # REQUIRED
+# Generate with: python3 -c "import uuid; print(uuid.uuid4())"
+id: <uuid4>                                                             # REQUIRED
+status: experimental    # experimental | test | stable                  # REQUIRED
+# experimental = written, not yet validated against Atomic telemetry
+# test         = Atomic test fired, Wazuh caught it, under tuning
+# stable       = false-positive rate assessed, ships to production
+
+description: >
+  # REQUIRED. Write 2-4 sentences.
+  # 1. What adversary behaviour does this detect?
+  # 2. Why would an adversary do this? (ATT&CK context)
+  # 3. What telemetry makes it visible?
+  # Do not restate the title. Add context that isn't obvious from the detection logic.
+
+references:                                                             # REQUIRED (min 1)
+  - https://attack.mitre.org/techniques/TXXXX/YYY/
+  # Add vendor docs, blog posts, or research that informed the detection.
+
+author: Matt Hébert                                                     # REQUIRED
+date: YYYY-MM-DD                                                        # REQUIRED
+modified: YYYY-MM-DD                                                    # Update on every change
+
+tags:                                                                   # REQUIRED
+  - attack.<tactic_name>          # e.g. attack.execution
+  - attack.tXXXX.YYY              # e.g. attack.t1059.001
+  # Full tactic names: initial_access, execution, persistence,
+  # privilege_escalation, defense_evasion, credential_access,
+  # discovery, lateral_movement, collection, command_and_control,
+  # exfiltration, impact
+
+logsource:                                                              # REQUIRED
+  category: process_creation      # Sigma logsource category
+  product: windows                # windows | linux | macos
+  # Common categories:
+  #   process_creation      → Sysmon Event ID 1
+  #   network_connection    → Sysmon Event ID 3
+  #   image_load            → Sysmon Event ID 7
+  #   file_creation         → Sysmon Event ID 11
+  #   registry_set          → Sysmon Event ID 13
+  #   pipe_created          → Sysmon Event ID 17/18
+  #   dns_query             → Sysmon Event ID 22
+  #   process_access        → Sysmon Event ID 10
+
+detection:                                                              # REQUIRED
+  selection:
+    FieldName|modifier:
+      - 'value1'
+      - 'value2'
+  # Modifiers: contains | startswith | endswith | re (regex) | cidr | all
+  # Multiple selection blocks are AND'd by default.
+  # Use filter_* blocks to subtract known-good traffic.
+  filter_main_legit:
+    FieldName: 'known_good_value'
+  condition: selection and not filter_main_legit
+  # condition operators: and | or | not | 1 of selection* | all of filter*
+
+falsepositives:                                                         # REQUIRED
+  - <Specific, realistic false-positive scenario — not "legitimate admin activity">
+  # Be precise. "Administrators running encoded PowerShell via SCCM" is useful.
+  # "Legitimate use" is not.
+
+level: medium   # low | medium | high | critical                        # REQUIRED
+# low      = noisy, high FP rate, informational
+# medium   = moderate FP rate, investigate
+# high     = low FP rate, likely malicious
+# critical = near-zero FP, immediate response warranted
+
+# ─── WAZUH TRANSLATION NOTES ───────────────────────────────────────────────
+# After writing this rule, create the matching file at:
+#   wazuh/<tactic>/<same_filename>.xml
+#
+# Field name mapping (Sysmon → Wazuh parsed field names):
+#   Image           → win.eventdata.image
+#   CommandLine     → win.eventdata.commandLine
+#   ParentImage     → win.eventdata.parentImage
+#   TargetFilename  → win.eventdata.targetFilename
+#   DestinationIp   → win.eventdata.destinationIp
+#   DestinationPort → win.eventdata.destinationPort
+#   User            → win.eventdata.user
+#
+# Wazuh rule IDs: start at 100001, increment by 1 per rule.
+# Current next available ID: see docs/coverage-matrix.md
+
+# ─── ATOMIC RED TEAM VALIDATION ────────────────────────────────────────────
+# Before setting status: test or stable, run the matching Atomic test:
+#   Invoke-AtomicTest TXXXX.YYY -TestNumbers N
+# Log the command, output, and Wazuh alert JSON in:
+#   tests/<tactic>/TXXXX.YYY_evidence.md

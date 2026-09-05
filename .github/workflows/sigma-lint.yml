@@ -1,0 +1,47 @@
+name: Sigma Lint
+
+on:
+  push:
+    paths:
+      - 'rules/**/*.yml'
+  pull_request:
+    paths:
+      - 'rules/**/*.yml'
+
+jobs:
+  lint:
+    name: Validate Sigma Rules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install sigma-cli
+        run: pip install sigma-cli
+
+      - name: Lint all rules
+        run: |
+          echo "Checking rules..."
+          find rules/ -name "*.yml" | while read rule; do
+            echo "→ $rule"
+            sigma check "$rule" || exit 1
+          done
+          echo "All rules passed."
+
+      - name: Check for duplicate UUIDs
+        run: |
+          echo "Checking for duplicate rule IDs..."
+          ids=$(grep -rh "^id:" rules/ | awk '{print $2}' | sort)
+          dupes=$(echo "$ids" | uniq -d)
+          if [ -n "$dupes" ]; then
+            echo "DUPLICATE UUIDs FOUND:"
+            echo "$dupes"
+            exit 1
+          fi
+          echo "No duplicate IDs found."

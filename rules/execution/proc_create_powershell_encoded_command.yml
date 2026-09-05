@@ -1,0 +1,50 @@
+title: PowerShell Encoded Command Execution
+id: 4a3e2b1c-8f7d-4c9e-a2b5-3d6f1e8c0a4b
+status: experimental
+description: >
+  Detects PowerShell or pwsh invoked with the -EncodedCommand flag (-EnC, -EC),
+  which accepts a Base64-encoded command string as input. Adversaries use this
+  to conceal payload content from command-line inspection and bypass naive
+  keyword-based defences. Corresponds to the Command and Scripting Interpreter
+  sub-technique for PowerShell. High-fidelity in environments where legitimate
+  automation does not rely on encoded command invocation.
+
+references:
+  - https://attack.mitre.org/techniques/T1059/001/
+  - https://lolbas-project.github.io/lolbas/Binaries/Powershell/
+  - https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_powershell_exe
+
+author: Matt Hébert
+date: 2026-09-05
+modified: 2026-09-05
+
+tags:
+  - attack.execution
+  - attack.t1059.001
+
+logsource:
+  category: process_creation
+  product: windows
+
+detection:
+  selection_image:
+    Image|endswith:
+      - '\powershell.exe'
+      - '\pwsh.exe'
+  selection_flags:
+    CommandLine|contains:
+      - ' -EncodedCommand '
+      - ' -EnC '
+      - ' -EC '
+      - ' /EncodedCommand '
+      - ' /EnC '
+      - ' /EC '
+  condition: selection_image and selection_flags
+
+falsepositives:
+  - Software deployment tools (SCCM, Intune) that invoke encoded PowerShell
+    during package installation or configuration baseline enforcement
+  - Legitimate administrative scripts that were encoded to handle special
+    characters — rare but possible in mature enterprises
+
+level: medium
